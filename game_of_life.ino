@@ -72,14 +72,10 @@ void gameOfLife() {
   //  Serial.println("printing neighbor count");
   for (int y = 0; y < MAX_Y; y++) {
     for (int x = 0; x < MAX_X; x++) {
-//      count = getNeighbors(y, x);
-      count = count_neighbors(y, x);
-      
-      //      Serial.print(count);
-      //      Serial.print(" ");
+//      count = my_count_neighbors(y, x);
+      count = getNeighbors(y, x);
       // Any live cell with two or three live neighbours survives
       if (board[y][x] == 1 && (count == 2 || count == 3)) {
-        //        Serial.print("next == 1 ");
         nextBoard[y][x] = 1;
       }
       // Any dead cell with three live neighbours becomes a live cell.
@@ -91,14 +87,9 @@ void gameOfLife() {
         nextBoard[y][x] = 0;
       }
     }
-
-
-    //    Serial.println();
-
   }
   // update the board
   copyBoard(nextBoard, board);
-  // end of gameOfLife()
 }
 
 // copy the src board to the destination board
@@ -110,39 +101,49 @@ void copyBoard(int src[MAX_Y][MAX_X], int dest[MAX_Y][MAX_X]) {
   }
 }
 
-//
-//int getNeighbors(int x, int y) {
-//  int count = 0;
-//  // perp and vertical
-//  if (x + 1 < MAX_X) count += board[x + 1][y]; //
-//  if (x - 1 >= 0) count += board[x - 1][y];
-//  if (y + 1 < MAX_Y) count += board[x][y + 1]; //
-//  if (y - 1 >= 0) count += board[x][y - 1];
-//
-//  // diag
-//  if (x + 1 < MAX_X && y + 1 < MAX_Y) count += board[x + 1][y + 1];
-//  if (x - 1 >= 0 && y + 1 < MAX_Y) count += board[x - 1][y + 1];
-//  if (x + 1 < MAX_X && y - 1 >= 0) count += board[x + 1][y - 1];
-//  if (x - 1 >= 0 && y - 1 >= 0) count += board[x - 1][y - 1];
-//
-//  return count;
-//}
 
-
-int getNeighbors(int y, int x) {
+int my_count_neighbors(int y, int x) {
   int count = 0;
 
+  // above --------------------------------------------------------
+  // above left
+  if (y > 0 && x > 0) count += board[y - 1][x - 1];
+  // above
+  if (y > 0) count += board[y - 1][x];
+  // above right
+  if ((x + 1) < MAX_Y) count += board[y - 1][x + 1];
+  
+  // current row --------------------------------------------------
+  // left
+  if (x > 0) count += board[y][x - 1];
+  // right
+  if ((x + 1) < MAX_Y) count += board[y][x + 1];
+  
+  // below --------------------------------------------------------
+  // below left
+  if ((y + 1) < MAX_Y && x > 0) count += board[y + 1][x - 1];
+  // below
+  if ((y + 1) < MAX_Y) count += board[y + 1][x];
+  // below right
+  if ((x + 1) < MAX_Y) count += board[y + 1][x + 1];
+
+
+
+  return count;
+}
+
+
+// TODO this almost works, but fails to return correct count 
+int getNeighbors(int y, int x) {
+  int count = 0;
   // perp and vertical
   for (int j = -1; j < 2; j++) {
     for (int i = -1; i < 2; i++) {
-      if ( ((x + i) >= 0) && ((x + i) < (MAX_X)) && ((y + j) >= 0) && ((y + j) < MAX_Y) ) {
-        if (board[j][i] == 0) {
-          count++;
-          Serial.print(y);
-          Serial.print(":");
-          Serial.print(x);
-          Serial.println(" incremented count!");
-        }
+      // don't count self
+      if (i == 0 && j == 0) continue;
+      // else count everything in bounds
+      if ((y + j >= 0) && (y + j < MAX_Y) && (x + i >= 0) && (x + i < MAX_X)) {
+          count += board[y+j][x+i];
       }
     }
   }
