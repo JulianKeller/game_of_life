@@ -13,16 +13,24 @@
 #define MAX_Y 8
 #define MAX_X 32
 
+// Defin max iterations
+#define MAX_ITERATIONS 5
+
+int hasChanged = 1;
+int iterations = 0;
+int previousSum = 0;
+int sum_count = 0;
+
 // init game board so we can easily input a starting pattern
 int board[MAX_Y][MAX_X] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
 };
 
 
@@ -37,24 +45,34 @@ void setup() {
   randomSeed(analogRead(1));
 
   //  initBoard(board, 1);
+  random_init_board(board, 10);
 }
 
 
 void loop() {
-  delay(1000);
-  printBoard();
+  delay(100);
+  //  printBoard();
   displayBoard();
   gameOfLife();
-
-  //  printBoardValues();
 
 }
 
 
 void gameOfLife() {
 
-  // create a new board
+  int sum = sumBoard();
+  if (sum == previousSum) {
+    sum_count++;
+  }
+  previousSum = sum;
 
+
+  // if the board has not changed, set random points until it changes
+  if (sum_count >= MAX_ITERATIONS) {
+    resetBoard();
+  }
+
+  // create a new board
   int nextBoard[MAX_Y][MAX_X] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -72,7 +90,7 @@ void gameOfLife() {
   //  Serial.println("printing neighbor count");
   for (int y = 0; y < MAX_Y; y++) {
     for (int x = 0; x < MAX_X; x++) {
-//      count = my_count_neighbors(y, x);
+      //      count = my_count_neighbors(y, x);
       count = getNeighbors(y, x);
       // Any live cell with two or three live neighbours survives
       if (board[y][x] == 1 && (count == 2 || count == 3)) {
@@ -94,8 +112,13 @@ void gameOfLife() {
 
 // copy the src board to the destination board
 void copyBoard(int src[MAX_Y][MAX_X], int dest[MAX_Y][MAX_X]) {
+  hasChanged = 0;
   for (int y = 0; y < MAX_Y; y++) {
     for (int x = 0; x < MAX_X; x++) {
+      // detect if board has changed so it doesn't get stuck
+      if (dest[y][x] != src[y][x]) {
+        hasChanged = 1;
+      }
       dest[y][x] = src[y][x];
     }
   }
@@ -111,29 +134,27 @@ int my_count_neighbors(int y, int x) {
   // above
   if (y > 0) count += board[y - 1][x];
   // above right
-  if ((x + 1) < MAX_Y) count += board[y - 1][x + 1];
-  
+  if ((x + 1) < MAX_X && y > 0) count += board[y - 1][x + 1];
+
   // current row --------------------------------------------------
   // left
   if (x > 0) count += board[y][x - 1];
   // right
-  if ((x + 1) < MAX_Y) count += board[y][x + 1];
-  
+  if ((x + 1) < MAX_X) count += board[y][x + 1];
+
   // below --------------------------------------------------------
   // below left
   if ((y + 1) < MAX_Y && x > 0) count += board[y + 1][x - 1];
   // below
   if ((y + 1) < MAX_Y) count += board[y + 1][x];
   // below right
-  if ((x + 1) < MAX_Y) count += board[y + 1][x + 1];
-
-
+  if ((x + 1) < MAX_X && (y + 1) < MAX_Y) count += board[y + 1][x + 1];
 
   return count;
 }
 
 
-// TODO this almost works, but fails to return correct count 
+// TODO this almost works, but fails to return correct count
 int getNeighbors(int y, int x) {
   int count = 0;
   // perp and vertical
@@ -143,78 +164,141 @@ int getNeighbors(int y, int x) {
       if (i == 0 && j == 0) continue;
       // else count everything in bounds
       if ((y + j >= 0) && (y + j < MAX_Y) && (x + i >= 0) && (x + i < MAX_X)) {
-          count += board[y+j][x+i];
+        count += board[y + j][x + i];
       }
     }
   }
   return count;
 }
 
-
-int count_neighbors(int y, int x) {
-  int count = 0;
-
-  // -- Row above us ---
-  if (y > 0) {
-    // above left
-    if (x > 0) {
-      count += board[y - 1][x - 1];
-    }
-    // above
-    count += board[y - 1][x];
-    // above right
-    if ((x + 1) < MAX_Y) {
-      count += board[y - 1][x + 1];
-    }
-  }
-
-  // -- Same row -------
-  // left
-  if (x > 0) {
-    count += board[y][x - 1];
-  }
-  // right
-  if ((x + 1) < MAX_Y) {
-    count += board[y][x + 1];
-  }
-
-  // -- Row below us ---
-  if ((y + 1) < MAX_Y) {
-    // below left
-    if (x > 0) {
-      count += board[y + 1][x - 1];
-    }
-    // below
-    count += board[y + 1][x];
-    // below right
-    if ((x + 1) < MAX_Y) {
-      count += board[y + 1][x + 1];
-    }
-  }
-  return count;
-}
-
-
-
-void printBoardValues() {
-  for (int y = 0; y < MAX_Y; y++) {
-    for (int x = 0; x < MAX_X; x++) {
-      Serial.print(y);
-      Serial.print(":");
-      Serial.print(x);
-      Serial.print(" = ");
-      Serial.println(board[y][x]);
-    }
-  }
-}
-
-
-
 void displayBoard() {
   for (int y = 0; y < MAX_Y; y++) {
     for (int x = 0; x < MAX_X; x++) {
       mx.setPoint(y, x, board[y][x]);
     }
+  }
+}
+
+// add up the total value of the board
+int sumBoard() {
+  int sum = 0;
+  for (int y = 0; y < MAX_Y; y++) {
+    for (int x = 0; x < MAX_X; x++) {
+      sum += board[y][x];
+    }
+  }
+  return sum;
+}
+
+void initBoard(int board[MAX_Y][MAX_X], int value) {
+  for (int y = 0; y < MAX_Y; y++) {
+    for (int x = 0; x < MAX_X; x++) {
+      board[y][x] = value;
+    }
+  }
+}
+
+void resetBoard() {
+  //  // clear the board with a flash
+  ////    initBoard(board, 1);
+  //    setBoardOutline(board);
+  //    displayBoard();
+  //    delay(100);
+  //    initBoard(board, 0);
+  //    displayBoard();
+
+  // reset the board with 100 random points
+//  for (int i = 0; i < 10; i++) randomDisplay();
+
+  set_random_point_near_neighbor(1, 10);
+
+  //  set_random_point(1, 100);
+
+  // set random board
+  //    random_init_board(board, 100);
+  sum_count = 0;
+}
+
+
+
+void setBoardOutline(int board[MAX_Y][MAX_X]) {
+  for (int y = 0; y < MAX_Y; y++) {
+    for (int x = 0; x < MAX_X; x++) {
+      if (y == 0 || y == MAX_Y - 1) board[y][x] = 1;
+      if (x == 0 || x == MAX_X - 1) board[y][x] = 1;
+    }
+  }
+}
+
+void random_init_board(int board[MAX_Y][MAX_X], int num_points) {
+  int x = 0;
+  int y = 0;
+  for (int i = 0; i < num_points; i++) {
+    y = random(0, MAX_Y);
+    x = random(0, MAX_X);
+    board[y][x] = 1;
+  }
+}
+
+
+// standalone method that can be called in loop
+void randomDisplay() {
+  set_random_point(1, 1);
+  set_random_point(0, 2);
+  delay(100);
+}
+
+
+void set_random_point_near_neighbor(int state, int repeat) {
+  int x = 0;
+  int y = 0;
+  // set 4 random points
+  for (int i = 0; i < 4; i++) {
+    y = random(0, MAX_Y);
+    x = random(0, MAX_X);
+    board[y][x] = state;
+    mx.setPoint(y, x, state);
+  }
+
+  // set points only near neighbors
+  int i = 0;
+  int neighbors = 0;
+  while (i < repeat) {
+    y = random(0, MAX_Y);
+    x = random(0, MAX_X);
+    if (getNeighbors(y, x) > 0) {
+      board[y][x] = state;
+      mx.setPoint(y, x, state);
+      i++;
+      delay(500);
+    }
+
+  }
+}
+
+void set_random_point(int state, int repeat) {
+  int x = 0;
+  int y = 0;
+  for (int i = 0; i < repeat; i++) {
+    y = random(0, MAX_Y);
+    x = random(0, MAX_X);
+    board[y][x] = state;
+    mx.setPoint(y, x, state);
+  }
+}
+
+void printLine(char* str, int value) {
+  if (DEBUG) {
+    Serial.print(str);
+    Serial.println(value);
+  }
+}
+
+
+void printit(char* str, int value) {
+  if (DEBUG) {
+    Serial.print(str);
+    Serial.print(value);
   }
 }
 
@@ -230,51 +314,14 @@ void printBoard() {
   Serial.println("##########################################################################################");
 }
 
-
-void initBoard(int board[MAX_Y][MAX_X], int value) {
+void printBoardValues() {
   for (int y = 0; y < MAX_Y; y++) {
     for (int x = 0; x < MAX_X; x++) {
-      board[y][x] = value;
+      Serial.print(y);
+      Serial.print(":");
+      Serial.print(x);
+      Serial.print(" = ");
+      Serial.println(board[y][x]);
     }
-  }
-}
-
-
-// standalone method that can be called in loop
-void randomDisplay() {
-  set_random_point(1, 1);
-  set_random_point(0, 2);
-  delay(100);
-}
-
-void set_random_point(int state, int repeat) {
-  uint8_t max_y = 0;
-  uint16_t max_x = 0;
-  for (int i = 0; i < repeat; i++) {
-    max_y = random(0, 8);
-    max_x = random(0, 32);
-    mx.setPoint(max_y, max_x, state);
-  }
-}
-
-//void printNeighbors(int x, int y, int count) {
-//  Serial.print("HEY");
-//  printit("i = ", i);
-//  printit("j = ", j);
-//  printLine(": ", count);
-//}
-
-void printLine(char* str, int value) {
-  if (DEBUG) {
-    Serial.print(str);
-    Serial.println(value);
-  }
-}
-
-
-void printit(char* str, int value) {
-  if (DEBUG) {
-    Serial.print(str);
-    Serial.print(value);
   }
 }
