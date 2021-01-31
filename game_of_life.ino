@@ -13,24 +13,31 @@
 #define MAX_Y 8
 #define MAX_X 32
 
-// Defin max iterations
-#define MAX_ITERATIONS 5
+// Define max iterations
+#define MAX_ITERATIONS 10
 
 int hasChanged = 1;
 int iterations = 0;
 int previousSum = 0;
 int sum_count = 0;
+int average = 0;
+int previousAverage = 0;
+
+
+int one = 0;
+int two = 0;
+int three = 0;
 
 // init game board so we can easily input a starting pattern
 int board[MAX_Y][MAX_X] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
 };
 
 
@@ -45,12 +52,12 @@ void setup() {
   randomSeed(analogRead(1));
 
   //  initBoard(board, 1);
-  random_init_board(board, 10);
+//  random_init_board(board, 10);
 }
 
 
 void loop() {
-  delay(100);
+  delay(200);
   //  printBoard();
   displayBoard();
   gameOfLife();
@@ -60,7 +67,19 @@ void loop() {
 
 void gameOfLife() {
 
+  iterations++;
   int sum = sumBoard();
+  // update board if it gets stuck in the same 3 iterations over and over
+  average += sum;
+  if (iterations >= 3) {
+    iterations = 0;
+    average = average/3;
+    if (average == previousAverage) resetBoard();
+    previousAverage = average;
+  }
+
+
+  // update board if it gets stuck  
   if (sum == previousSum) {
     sum_count++;
   }
@@ -210,7 +229,7 @@ void resetBoard() {
   // reset the board with 100 random points
 //  for (int i = 0; i < 10; i++) randomDisplay();
 
-  set_random_point_near_neighbor(1, 10);
+  set_random_point_near_neighbor(1, 3);
 
   //  set_random_point(1, 100);
 
@@ -249,11 +268,13 @@ void randomDisplay() {
 }
 
 
+// repeate should be greater than the number of points to set 
 void set_random_point_near_neighbor(int state, int repeat) {
   int x = 0;
   int y = 0;
-  // set 4 random points
-  for (int i = 0; i < 4; i++) {
+  int points = 4;
+  // set a couple of random points
+  for (int i = 0; i < points; i++) {
     y = random(0, MAX_Y);
     x = random(0, MAX_X);
     board[y][x] = state;
@@ -263,7 +284,7 @@ void set_random_point_near_neighbor(int state, int repeat) {
   // set points only near neighbors
   int i = 0;
   int neighbors = 0;
-  while (i < repeat) {
+  while (i < repeat * points) {
     y = random(0, MAX_Y);
     x = random(0, MAX_X);
     if (getNeighbors(y, x) > 0) {
