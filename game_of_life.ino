@@ -9,6 +9,9 @@
 #define CS_PIN    3       // Control pin to communicate with display
 #define DEBUG 0
 
+// potentiometer 
+#define POT A2
+
 // display dimensions
 #define MAX_Y 8
 #define MAX_X 32
@@ -31,12 +34,12 @@ int three = 0;
 // init game board so we can easily input a starting pattern
 int board[MAX_Y][MAX_X] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 };
 
@@ -57,7 +60,13 @@ void setup() {
 
 
 void loop() {
-  delay(150);
+  // enable this to control speed with pot
+  int val = analogRead(POT);
+//  Serial.println(val);
+//  delay(val);
+
+  // enable for hard coded speed
+  delay(80);
   //  printBoard();
   displayBoard();
   gameOfLife();
@@ -71,9 +80,9 @@ void gameOfLife() {
   int sum = sumBoard();
   // update board if it gets stuck in the same 3 iterations over and over
   average += sum;
-  if (iterations >= 20) {
+  if (iterations >= 100) {
     iterations = 0;
-    average = average / 20;
+    average = average / 100;
     if (average == previousAverage) {
       resetBoard();
     }
@@ -113,6 +122,7 @@ void gameOfLife() {
     for (int x = 0; x < MAX_X; x++) {
       //      count = my_count_neighbors(y, x);
       count = getNeighbors(y, x);
+      
       // Any live cell with two or three live neighbours survives
       if (board[y][x] == 1 && (count == 2 || count == 3)) {
         nextBoard[y][x] = 1;
@@ -121,6 +131,7 @@ void gameOfLife() {
       else if (board[y][x] == 0 && (count == 3)) {
         nextBoard[y][x] = 1;
       }
+      
       // All other live cells die in the next generation. Similarly, all other dead cells stay dead.
       else {
         nextBoard[y][x] = 0;
